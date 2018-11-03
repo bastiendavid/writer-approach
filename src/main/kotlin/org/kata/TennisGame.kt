@@ -1,53 +1,80 @@
 package org.kata
 
-class TennisGame(private val player1Name: String, private val player2Name: String) {
+import java.lang.Math.abs
 
-    private var m_score1: Int = 0
-    private var m_score2: Int = 0
+class Player(private val name: String, private var points: Int = 0) {
+    fun scorePoint() {
+        points += 1
+    }
+
+    fun scoredEnoughPointsToWin() = points >= 4
+    fun scoredLessThan3Points() = points < 3
+
+    fun isTiedWith(player2: Player) = points == player2.points
+
+    fun score(): String {
+        return when (points) {
+            0 -> "Love"
+            1 -> "Fifteen"
+            2 -> "Thirty"
+            else -> "Forty"
+        }
+    }
+
+    fun scoreDelta(player2: Player) = points - player2.points
+    fun hasMorePointsThan(player2: Player) = points > player2.points
+    fun hasAdvantage(): String = "Advantage $name"
+    fun hasWon(): String = "Win for $name"
+}
+
+class TennisGame(player1Name: String, player2Name: String) {
+
+    private val onePoint = 1
+    private val players = HashMap<String, Player>()
+    private val player1: Player = Player(player1Name)
+    private val player2: Player = Player(player2Name)
+
+    init {
+        players[player1Name] = player1
+        players[player2Name] = player2
+    }
 
     fun wonPoint(playerName: String) {
-        if (playerName === "player1")
-            m_score1 += 1
-        else
-            m_score2 += 1
+        players[playerName]?.scorePoint()
     }
 
     fun getScore(): String {
-        var score = ""
-        var tempScore = 0
-        if (m_score1 == m_score2) {
-            when (m_score1) {
-                0 -> score = "Love-All"
-                1 -> score = "Fifteen-All"
-                2 -> score = "Thirty-All"
-                else -> score = "Deuce"
-            }
-        } else if (m_score1 >= 4 || m_score2 >= 4) {
-            val minusResult = m_score1 - m_score2
-            if (minusResult == 1)
-                score = "Advantage player1"
-            else if (minusResult == -1)
-                score = "Advantage player2"
-            else if (minusResult >= 2)
-                score = "Win for player1"
-            else
-                score = "Win for player2"
-        } else {
-            for (i in 1..2) {
-                if (i == 1)
-                    tempScore = m_score1
-                else {
-                    score += "-"
-                    tempScore = m_score2
-                }
-                when (tempScore) {
-                    0 -> score += "Love"
-                    1 -> score += "Fifteen"
-                    2 -> score += "Thirty"
-                    3 -> score += "Forty"
-                }
-            }
+        return when {
+            playersAreTied() -> tieScore()
+            onePlayerHasEnoughPointsToWin() -> advantageOrEndGameScore()
+            else -> regularScore()
         }
-        return score
     }
+
+    private fun onePlayerHasEnoughPointsToWin() = player1.scoredEnoughPointsToWin() || player2.scoredEnoughPointsToWin()
+
+    private fun playersAreTied() = player1.isTiedWith(player2)
+
+    private fun regularScore() = "${scoreOf(player1)}-${scoreOf(player2)}"
+
+    private fun advantageOrEndGameScore(): String {
+        return when (differenceOfScoreBetweenPlayers()) {
+            onePoint -> playerThatLeads().hasAdvantage()
+            else -> playerThatLeads().hasWon()
+        }
+    }
+
+    private fun differenceOfScoreBetweenPlayers() = abs(player1.scoreDelta(player2))
+
+    private fun playerThatLeads() = if (player1.hasMorePointsThan(player2)) player1 else player2
+
+    private fun tieScore(): String {
+        return if (player1.scoredLessThan3Points())
+            "${scoreOf(player1)}-All"
+        else
+            "Deuce"
+    }
+
+    private fun scoreOf(player: Player) = player.score()
+
 }
